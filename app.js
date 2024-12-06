@@ -1,11 +1,11 @@
 const express = require('express')
-const crypto = require('node:crypto')
+const cryto = require('node:crypto')
 const movies = require('./movies.json')
 const { validateMovie, validatePartialMovie } = require('./movies')
 
 const app = express()
 app.use(express.json())
-app.disable('x-powered-by')
+app.disable('x-powered-by') // Deshabilita el header de X-Powered-By: Express
 
 const ACCEPTED_ORIGINS = [
   'http://localhost:1230',
@@ -13,28 +13,15 @@ const ACCEPTED_ORIGINS = [
   'http://localhost:8888'
 ]
 
-// Middleware global para configurar CORS
-app.use((req, res, next) => {
-  const origin = req.header('origin')
-
-  // Si no hay origin o el origin está en la lista aceptada, habilitar CORS
-  if (!origin || ACCEPTED_ORIGINS.includes(origin)) {
-    // Usar el origin detectado o '*' si no hay origin
-    res.header('Access-Control-Allow-Origin', origin || '*')
-    res.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS')
-    res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-  }
-
-  // Si es una petición preflight (OPTIONS), responder y no continuar
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200)
-  }
-
-  next()
-})
-
-// Rutas
+// Todos los recuesos que sean peliculas se identifican con /movies
 app.get('/movies', (req, res) => {
+  const origin = req.header('origin')
+  // Si la peticion es del mismo ORIGIN no te la va a enviar
+  // http://localhost:1233 -> http://localhost:1233
+  if (ACCEPTED_ORIGINS.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:8080')
+  }
+
   const { genre } = req.query
   if (genre) {
     const filteredMovies = movies.filter(
@@ -60,15 +47,23 @@ app.post('/movies', (req, res) => {
   }
 
   const newMovie = {
-    id: crypto.randomUUID(),
+    id: cryto.randomUUID(),
     ...result.data
   }
 
+  // Esto no seria REST, porque estamos guardando
+  // el estado de la aplicacion en memoria
   movies.push(newMovie)
-  res.status(201).json(newMovie)
+  res.status(201).json(newMovie) // Actualizar la cache del cliente
 })
 
 app.delete('/movies/:id', (req, res) => {
+  const origin = req.header('origin')
+
+  if (ACCEPTED_ORIGINS.includes(origin) || !origin) {
+    res.header('Access-Control-Allow-Origin', origin)
+  }
+
   const { id } = req.params
   const movieIndex = movies.findIndex(movie => movie.id === id)
 
@@ -77,14 +72,15 @@ app.delete('/movies/:id', (req, res) => {
   }
 
   movies.splice(movieIndex, 1)
-  return res.json({ message: 'Movie deleted' })
+
+  return res.json({ message: 'Movie delated' })
 })
 
 app.patch('/movies/:id', (req, res) => {
   const result = validatePartialMovie(req.body)
 
   if (!result.success) {
-    return res.status(400).json({ error: JSON.parse(result.error.message) })
+    return res.status(404).json({ error: JSON.parse(result.error.message) })
   }
 
   const { id } = req.params
@@ -100,10 +96,22 @@ app.patch('/movies/:id', (req, res) => {
   }
 
   movies[movieIndex] = updateMovie
+
   return res.json(updateMovie)
 })
 
+app.options('/movies/:id', (req, res) => {
+  const origin = req.header('origin')
+
+  if (ACCEPTED_ORIGINS.includes(origin) || !origin) {
+    res.header('Access-Control-Allow-Origin', origin)
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE')
+  }
+  res.send(200)
+})
+
 const PORT = process.env.PORT ?? 1230
+
 app.listen(PORT, () => {
-  console.log(`Server listening on port http://localhost:${PORT}`)
+  console.log('server listening on port http://localhost:1230')
 })
