@@ -9,7 +9,8 @@ app.disable('x-powered-by') // Deshabilita el header de X-Powered-By: Express
 
 const ACCEPTED_ORIGINS = [
   'http://localhost:1230',
-  'http://localhost:8080'
+  'http://localhost:8080',
+  'http://localhost:8888'
 ]
 
 // Todos los recuesos que sean peliculas se identifican con /movies
