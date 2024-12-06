@@ -10,7 +10,8 @@ app.disable('x-powered-by') // Deshabilita el header de X-Powered-By: Express
 const ACCEPTED_ORIGINS = [
   'http://localhost:1230',
   'http://localhost:8080',
-  'http://localhost:8888'
+  'http://localhost:8888',
+  '*'
 ]
 
 // Todos los recuesos que sean peliculas se identifican con /movies
@@ -19,7 +20,7 @@ app.get('/movies', (req, res) => {
   // Si la peticion es del mismo ORIGIN no te la va a enviar
   // http://localhost:1233 -> http://localhost:1233
   if (ACCEPTED_ORIGINS.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:8080')
+    res.header('Access-Control-Allow-Origin', '*')
   }
 
   const { genre } = req.query
